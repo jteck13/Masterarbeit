@@ -158,7 +158,7 @@ print('#################################### Training ##############')
 print('#################################### Training ##############')
 print('#################################### Training ##############')
 
-BATCH_SIZE = 8
+BATCH_SIZE =32
 resnetModel = ResNet50(weights='imagenet', include_top=True)
 resnetModel.summary()
 
@@ -257,7 +257,7 @@ pathTest = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Training_Ost_PNG
 z = 0
 
 for e, i in enumerate(os.listdir(path)):
-    if i.startswith("116.png"):
+    if i.startswith("118.png"):
         z += 1
         img = cv2.imread(os.path.join(path, i))
         ss.setBaseImage(img)
