@@ -257,7 +257,7 @@ pathTest = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Training_Ost_PNG
 z = 0
 
 for e, i in enumerate(os.listdir(path)):
-    if i.startswith("118.png"):
+    if i.startswith("116.png"):
         z += 1
         img = cv2.imread(os.path.join(path, i))
         ss.setBaseImage(img)
@@ -272,7 +272,7 @@ for e, i in enumerate(os.listdir(path)):
                 img = np.expand_dims(resized, axis=0)
                 out = model_final.predict(img)
                 #out= model_saved.predict(img)
-                print(out[0][0])
+                #print(out[0][0])
                 if out[0][0] > 0.8:
                     #print(out[0][0])
                     cv2.rectangle(imout, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
