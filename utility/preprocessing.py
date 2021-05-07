@@ -68,7 +68,7 @@ print(s, t, u, v)
 for c in bboxNew[5]:
     roi = img[u:v, s:t]
     cv2.imwrite('ROI/ROI_{}.png'.format(ROI_number), roi)
-    cv2.rectangle(copy,(s,u),(t,v),(0,0,255),2)
+    #cv2.rectangle(copy,(s,u),(t,v),(0,0,255),2)
     ROI_number += 1
     plt.figure()
     plt.imshow(copy)
