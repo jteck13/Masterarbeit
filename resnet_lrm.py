@@ -52,7 +52,7 @@ rects = ss.process()
 imOut = im.copy()
 for i, rect in (enumerate(rects)):
     x, y, w, h = rect
-    #     print(x,y,w,h)
+    print(x,y,w,h)
     #     imOut = imOut[x:x+w,y:y+h]
     cv2.rectangle(imOut, (x, y), (x + w, y + h), (0, 255, 0), 1, cv2.LINE_AA)
 # plt.figure()
