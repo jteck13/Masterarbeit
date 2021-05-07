@@ -32,8 +32,8 @@ for e, i in enumerate(os.listdir(annot)):
             x21 = x2 - 3
             y11 = y1 + 3
             y21 = y2 - 3
-            #cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 0), 2)
-            #cv2.rectangle(img, (x11, y11), (x21, y21), (0, 255, 0), 2)
+            cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 0), 2)
+            cv2.rectangle(img, (x11, y11), (x21, y21), (0, 255, 0), 2)
             bbox = {'x1': x11,
                     'x2': x21,
                     'y1': y11,
@@ -47,33 +47,23 @@ for e, i in enumerate(os.listdir(annot)):
         plt.show()
         break
 
-print(len(bboxNew))
-print(bboxNew[5])
-
-print(bboxNew[5]['x1'])
-
-s = bboxNew[5]['x1']
-t = bboxNew[5]['x2']
-u = bboxNew[5]['y1']
-v = bboxNew[5]['y2']
-
-start = {s, u}
-end = {t, v}
-
-ROI_number = 0
 copy = img.copy()
 
-print(s, t, u, v)
-
-for c in bboxNew[5]:
-    roi = img[u:v, s:t]
-    cv2.imwrite('ROI/ROI_{}.png'.format(ROI_number), roi)
-    #cv2.rectangle(copy,(s,u),(t,v),(0,0,255),2)
-    ROI_number += 1
-    plt.figure()
-    plt.imshow(copy)
-    plt.show()
-    break
+ROI_number = 0
+for d in range(len(bboxNew)):
+    print(d)
+    s = bboxNew[d]['x1']
+    t = bboxNew[d]['x2']
+    u = bboxNew[d]['y1']
+    v = bboxNew[d]['y2']
+    start = {s, u}
+    end = {t, v}
+    for c in bboxNew[d]:
+        roi = img[u:v, s:t]
+        cv2.imwrite('ROI/ROI_{}.png'.format(ROI_number), roi)
+        #cv2.rectangle(copy,(s,u),(t,v),(0,0,255),2)
+        ROI_number += 1
+        break
 
 
 
