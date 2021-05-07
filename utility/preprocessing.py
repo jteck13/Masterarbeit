@@ -13,14 +13,14 @@ print(cpt)
 
 bboxNew = []
 
-img = cv2.imread(os.path.join(path, '118.png'))
+img = cv2.imread(os.path.join(path, '119.png'))
 
 for e, i in enumerate(os.listdir(annot)):
     if e < 10:
         filename = i.split(".")[0] + ".png"
         print(filename)
-        img = cv2.imread(os.path.join(path, '118.png'))
-        df = pd.read_csv(os.path.join(annot, '118.csv'))
+        img = cv2.imread(os.path.join(path, '119.png'))
+        df = pd.read_csv(os.path.join(annot, '119.csv'))
         plt.imshow(img)
         plt.show()
         for row in df.iterrows():
