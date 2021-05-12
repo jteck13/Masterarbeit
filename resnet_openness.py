@@ -78,7 +78,7 @@ def get_iou(bb1, bb2):
     bb1_area = (bb1['x2'] - bb1['x1']) * (bb1['y2'] - bb1['y1'])
     bb2_area = (bb2['x2'] - bb2['x1']) * (bb2['y2'] - bb2['y1'])
     iou = intersection_area / float(bb1_area + bb2_area - intersection_area)
-    print(iou)
+    #print(iou)
     assert iou >= 0.0
     assert iou <= 1.0
     return iou
@@ -169,7 +169,7 @@ for layers in (resnetModel.layers)[:15]:
 X = resnetModel.layers[-2].output
 predictions = Dense(2, activation="softmax")(X)
 model_final = Model(resnetModel.input, predictions)
-opt = Adam(lr=0.001)
+opt = Adam(lr=0.0007)
 model_final.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=opt, metrics=["accuracy"])
 model_final.summary()
 
@@ -279,3 +279,7 @@ for e, i in enumerate(os.listdir(path)):
         plt.imshow(imout)
         plt.show()
         break
+
+
+
+
