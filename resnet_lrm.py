@@ -217,7 +217,7 @@ testdata = tsdata.flow(x=X_test, y=y_test, batch_size=BATCH_SIZE)
 
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 
-checkpoint = ModelCheckpoint("ieeercnn_resnet_1.h5", monitor='val_loss', verbose=1, save_best_only=True,
+checkpoint = ModelCheckpoint("ieeercnn_resnet_lrm_1.h5", monitor='val_loss', verbose=1, save_best_only=True,
                              save_weights_only=False, mode='auto', period=1)
 early = EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=1, mode='auto')
 history = model_final.fit_generator(generator=traindata, steps_per_epoch=steps_per_epoch, epochs=1000,
@@ -249,17 +249,17 @@ plt.show()
 
 
 ############################ Load Model ##########################################################
-model_saved = load_model('ieeercnn_resnet_1.h5')
+model_saved = load_model('ieeercnn_resnet_lrm_1.h5')
 
 ############################ Predict model #######################################################
 
 pathTest = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Training_Ost_PNG' + '\\'
 z = 0
 
-for e, i in enumerate(os.listdir(path)):
-    if i.startswith("118.png"):
+for e, i in enumerate(os.listdir(pathTest)):
+    if i.startswith("15.png"):
         z += 1
-        img = cv2.imread(os.path.join(path, i))
+        img = cv2.imread(os.path.join(pathTest, i))
         ss.setBaseImage(img)
         ss.switchToSelectiveSearchQuality()
         ssresults = ss.process()
