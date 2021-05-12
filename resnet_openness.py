@@ -18,7 +18,7 @@ if gpus:
 from tensorflow.keras.optimizers import Adam
 
 path = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Images\12052021' + '\\'
-annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations' + '\\'
+annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\new_120521' + '\\'
 
 cpt = sum([len(files) for r, d, files in os.walk(path)])
 print(cpt)
@@ -169,7 +169,7 @@ for layers in (resnetModel.layers)[:15]:
 X = resnetModel.layers[-2].output
 predictions = Dense(2, activation="softmax")(X)
 model_final = Model(resnetModel.input, predictions)
-opt = Adam(lr=0.0001)
+opt = Adam(lr=0.001)
 model_final.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=opt, metrics=["accuracy"])
 model_final.summary()
 
@@ -226,9 +226,6 @@ history = model_final.fit_generator(generator=traindata, steps_per_epoch=steps_p
 
 
 ############################ Evaluate ############################################################
-
-print(history.history.keys())
-
 # summarize history for accuracy
 plt.plot(history.history['accuracy'])
 plt.plot(history.history['val_accuracy'])
@@ -254,12 +251,13 @@ model_saved = load_model('ieeercnn_resnet_openness_1.h5')
 ############################ Predict model #######################################################
 
 pathTest = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Training_Ost_PNG' + '\\'
+
 z = 0
 
-for e, i in enumerate(os.listdir(pathTest)):
-    if i.startswith("15.png"):
+for e, i in enumerate(os.listdir(path)):
+    if i.startswith("118.png"):
         z += 1
-        img = cv2.imread(os.path.join(pathTest, i))
+        img = cv2.imread(os.path.join(path, i))
         ss.setBaseImage(img)
         ss.switchToSelectiveSearchQuality()
         ssresults = ss.process()
@@ -273,7 +271,7 @@ for e, i in enumerate(os.listdir(pathTest)):
                 out = model_final.predict(img)
                 #out= model_saved.predict(img)
                 #print(out[0][0])
-                if out[0][0] > 0.8:
+                if out[0][0] > 0.98:
                     #print(out[0][0])
                     cv2.rectangle(imout, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
                     cv2.putText(imout, str("%.2f" % round(out[0][0],2)), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
