@@ -36,7 +36,7 @@ model_saved = load_model('ieeercnn_resnet_lrm_1.h5')
 
 ############################ Predict model #######################################################
 
-
+# calculate iou from test and pred
 def get_iou(bb1, bb2):
     assert bb1['x1'] < bb1['x2']
     assert bb1['y1'] < bb1['y2']
@@ -64,6 +64,7 @@ z = 0
 for e, i in enumerate(os.listdir(path)):
     if i.startswith("118.png"):
         z += 1
+        #read test bbox
         df = pd.read_csv(os.path.join(annot, '118.csv'))
         gtvalues = []
         for row in df.iterrows():
@@ -89,6 +90,9 @@ for e, i in enumerate(os.listdir(path)):
                 #print(out[0][0])
                 if out[0][0] > 0.70:
                     print(x,y,x+w,y+h)
+                    #calculate iou for predicted img
+
+
                     # print(out[0][0])
                     cv2.rectangle(imout, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
                     cv2.putText(imout, str("%.2f" % round(out[0][0],2)), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
