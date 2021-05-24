@@ -18,7 +18,7 @@ if gpus:
 from tensorflow.keras.optimizers import Adam
 
 path = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Images\28042021' + '\\'
-annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations' + '\\'
+annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\new_120521' + '\\'
 
 cpt = sum([len(files) for r, d, files in os.walk(path)])
 print(cpt)
@@ -158,7 +158,7 @@ print('#################################### Training ##############')
 print('#################################### Training ##############')
 print('#################################### Training ##############')
 
-BATCH_SIZE =32
+BATCH_SIZE = 16
 resnetModel = ResNet50(weights='imagenet', include_top=True)
 resnetModel.summary()
 

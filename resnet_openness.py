@@ -169,7 +169,7 @@ for layers in (resnetModel.layers)[:15]:
 X = resnetModel.layers[-2].output
 predictions = Dense(2, activation="softmax")(X)
 model_final = Model(resnetModel.input, predictions)
-opt = Adam(lr=0.0007)
+opt = Adam(lr=0.0001)
 model_final.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=opt, metrics=["accuracy"])
 model_final.summary()
 
