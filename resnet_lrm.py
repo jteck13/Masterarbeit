@@ -17,8 +17,8 @@ if gpus:
         print(e)
 from tensorflow.keras.optimizers import Adam
 
-path = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Experiment_22042021' + '\\'
-annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\experiment' + '\\'
+path = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Img_ohne_Eval' + '\\'
+annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\old_lrm' + '\\'
 
 cpt = sum([len(files) for r, d, files in os.walk(path)])
 print(cpt)
@@ -29,8 +29,8 @@ for e, i in enumerate(os.listdir(annot)):
         print(filename)
         img = cv2.imread(os.path.join(path, '118.png'))
         df = pd.read_csv(os.path.join(annot, '118.csv'))
-        plt.imshow(img)
-        plt.show()
+        #plt.imshow(img)
+        #plt.show()
         for row in df.iterrows():
             x1 = int(row[1][0].split(" ")[0])
             y1 = int(row[1][0].split(" ")[1])
@@ -159,7 +159,7 @@ print('#################################### Training ##############')
 print('#################################### Training ##############')
 print('#################################### Training ##############')
 
-BATCH_SIZE = 12
+BATCH_SIZE = 8
 resnetModel = ResNet50(weights='imagenet', include_top=True)
 resnetModel.summary()
 
@@ -218,7 +218,7 @@ testdata = tsdata.flow(x=X_test, y=y_test, batch_size=BATCH_SIZE)
 
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 
-checkpoint = ModelCheckpoint("ieeercnn_resnet_lrm_1_exp1.h5", monitor='val_loss', verbose=1, save_best_only=True,
+checkpoint = ModelCheckpoint("ieeercnn_resnet_lrm_1.h5", monitor='val_loss', verbose=1, save_best_only=True,
                              save_weights_only=False, mode='auto', period=1)
 early = EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=1, mode='auto')
 history = model_final.fit_generator(generator=traindata, steps_per_epoch=steps_per_epoch, epochs=1000,
@@ -250,7 +250,7 @@ plt.show()
 
 
 ############################ Load Model ##########################################################
-model_saved = load_model('ieeercnn_resnet_lrm_1_exp1.h5')
+model_saved = load_model('ieeercnn_resnet_lrm.h5')
 
 ############################ Predict model #######################################################
 

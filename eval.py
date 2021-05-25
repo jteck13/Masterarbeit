@@ -25,14 +25,38 @@ from tensorflow.keras.applications.resnet50 import ResNet50
 
 
 
-path = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Images\28042021' + '\\'
-annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\old_lrm' + '\\'
+pathShow = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\vorübergehend\img' + '\\'
+annotShow = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\old_lrm' + '\\'
+
+cpt = sum([len(files) for r, d, files in os.walk(pathShow)])
+print(cpt)
+
+for e, i in enumerate(os.listdir(pathShow)):
+    if e < 10:
+        filename = i.split(".")[0] + ".png"
+        print(filename)
+        img = cv2.imread(os.path.join(pathShow, '134.png'))
+        df = pd.read_csv(os.path.join(annotShow, '134.csv'))
+        #plt.imshow(img)
+        #plt.show()
+        for row in df.iterrows():
+            x1 = int(row[1][0].split(" ")[0])
+            y1 = int(row[1][0].split(" ")[1])
+            x2 = int(row[1][0].split(" ")[2])
+            y2 = int(row[1][0].split(" ")[3])
+            cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 0), 2)
+        plt.figure()
+        plt.imshow(img)
+        plt.show()
+        break
+
+
 
 cv2.setUseOptimized(True);
 ss = cv2.ximgproc.segmentation.createSelectiveSearchSegmentation()
 
 ############################ Load Model ##########################################################
-model_saved = load_model('ieeercnn_resnet_lrm_1_exp.h5')
+model_saved = load_model('ieeercnn_resnet_lrm_1.h5')
 
 ############################ Predict model #######################################################
 
@@ -71,9 +95,10 @@ cnt = 0
 
 for e, i in enumerate(os.listdir(pathPred)):
     if i.startswith("118.png"):
+        filenameRes = i.split(".")[0]
         z += 1
         #read test bbox
-        df = pd.read_csv(os.path.join(annot, '118.csv'))
+        df = pd.read_csv(os.path.join(annotShow, '118.csv'))
         gtvalues = []
         predvalues = []
         for row in df.iterrows():
@@ -96,21 +121,25 @@ for e, i in enumerate(os.listdir(pathPred)):
                 out = model_saved.predict(img)
                 #out= model_saved.predict(img)
                 #print(out[0][0])
-                if out[0][0] > 0.70:
+                if out[0][0] > 0.5:
                     for gtval in gtvalues:
                         #print(x,y,x+w,y+h)
                         #calculate iou for predicted img
                         iou = get_iou(gtval, {"x1": x, "x2": x + w, "y1": y, "y2": y + h})
-                        print(iou)
+
                         # print(out[0][0])
                         #cv2.rectangle(imout, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
                         #cv2.putText(imout, str("%.2f" % round(out[0][0],2)), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
-                        if(iou > .05):
+                        if(iou > .1):
                             cv2.rectangle(imout, (x, y), (x + w, y + h), (0, 255, 0), 1, cv2.LINE_AA)
-                            cv2.putText(imout, str("%.2f" % round(out[0][0], 2)), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
+                            cv2.putText(imout, str("%.2f" % round(out[0][0], 2)), (x - 20, y - 5), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
+                            cv2.putText(imout, str("%.2f" % round(iou, 2)), (x - 15, y + 30), cv2.FONT_HERSHEY_SIMPLEX,.5, (255, 36, 12), 2)
                             cnt += 1
+                            print(iou)
+                            print(out[0][0])
         plt.figure()
         plt.imshow(imout)
         plt.show()
+        #cv2.imwrite('result/lrm/eval/result{}.png'.format(filenameRes), imout)
         break
 
