@@ -17,8 +17,8 @@ if gpus:
         print(e)
 from tensorflow.keras.optimizers import Adam
 
-path = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Images\28042021' + '\\'
-annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\new_120521' + '\\'
+path = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Experiment_22042021' + '\\'
+annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\experiment' + '\\'
 
 cpt = sum([len(files) for r, d, files in os.walk(path)])
 print(cpt)
@@ -52,7 +52,7 @@ rects = ss.process()
 imOut = im.copy()
 for i, rect in (enumerate(rects)):
     x, y, w, h = rect
-    print(x,y,w,h)
+    #     print(x,y,w,h)
     #     imOut = imOut[x:x+w,y:y+h]
     cv2.rectangle(imOut, (x, y), (x + w, y + h), (0, 255, 0), 1, cv2.LINE_AA)
 # plt.figure()
@@ -85,11 +85,12 @@ def get_iou(bb1, bb2):
 
 
 ss = cv2.ximgproc.segmentation.createSelectiveSearchSegmentation()
-
+counter = 0
+falsecounter = 0
 for e, i in enumerate(os.listdir(annot)):
     try:
         filename = i.split(".")[0] + ".png"
-        print(e, filename)
+        #print(e, filename)
         image = cv2.imread(os.path.join(path, filename))
         df = pd.read_csv(os.path.join(annot, i))
         gtvalues = []
@@ -103,8 +104,6 @@ for e, i in enumerate(os.listdir(annot)):
         ss.switchToSelectiveSearchQuality()
         ssresults = ss.process()
         imout = image.copy()
-        counter = 0
-        falsecounter = 0
         flag = 0
         fflag = 0
         bflag = 0
@@ -113,8 +112,8 @@ for e, i in enumerate(os.listdir(annot)):
                 for gtval in gtvalues:
                     x, y, w, h = result
                     iou = get_iou(gtval, {"x1": x, "x2": x + w, "y1": y, "y2": y + h})
-                    if counter < 30:
-                        if iou > 0.4:
+                    if counter < 60:
+                        if iou >= 0.5:
                             timage = imout[y:y + h, x:x + w]
                             resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
                             train_images.append(resized)
@@ -122,8 +121,8 @@ for e, i in enumerate(os.listdir(annot)):
                             counter += 1
                     else:
                         fflag = 1
-                    if falsecounter < 30:
-                        if iou < 0.6:
+                    if falsecounter < 60:
+                        if iou < 0.5:
                             timage = imout[y:y + h, x:x + w]
                             resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
                             train_images.append(resized)
@@ -133,13 +132,15 @@ for e, i in enumerate(os.listdir(annot)):
                     else:
                         bflag = 1
                 if fflag == 1 and bflag == 1:
-                    print("inside")
+                    #print("inside")
                     flag = 1
-        print(counter)
     except Exception as e:
         print(e)
         print("error in " + filename)
         continue
+
+print("positive cnt: " + str(counter))
+print("negative cnt: " + str(falsecounter))
 
 X_new = np.array(train_images)
 y_new = np.array(train_labels)
@@ -158,7 +159,7 @@ print('#################################### Training ##############')
 print('#################################### Training ##############')
 print('#################################### Training ##############')
 
-BATCH_SIZE = 16
+BATCH_SIZE = 12
 resnetModel = ResNet50(weights='imagenet', include_top=True)
 resnetModel.summary()
 
@@ -217,7 +218,7 @@ testdata = tsdata.flow(x=X_test, y=y_test, batch_size=BATCH_SIZE)
 
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 
-checkpoint = ModelCheckpoint("ieeercnn_resnet_lrm_1.h5", monitor='val_loss', verbose=1, save_best_only=True,
+checkpoint = ModelCheckpoint("ieeercnn_resnet_lrm_1_exp.h5", monitor='val_loss', verbose=1, save_best_only=True,
                              save_weights_only=False, mode='auto', period=1)
 early = EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=1, mode='auto')
 history = model_final.fit_generator(generator=traindata, steps_per_epoch=steps_per_epoch, epochs=1000,
@@ -249,35 +250,38 @@ plt.show()
 
 
 ############################ Load Model ##########################################################
-model_saved = load_model('ieeercnn_resnet_lrm_1.h5')
+model_saved = load_model('ieeercnn_resnet_lrm_1_exp.h5')
 
 ############################ Predict model #######################################################
 
-pathTest = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Training_Ost_PNG' + '\\'
+pathOst = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Training_Ost_PNG' + '\\'
+pathPred = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Images\28042021' + '\\'
 z = 0
 
-for e, i in enumerate(os.listdir(pathTest)):
-    if i.startswith("15.png"):
-        z += 1
-        img = cv2.imread(os.path.join(pathTest, i))
-        ss.setBaseImage(img)
-        ss.switchToSelectiveSearchQuality()
-        ssresults = ss.process()
-        imout = img.copy()
-        for e, result in enumerate(ssresults):
-            if e < 4000:
-                x, y, w, h = result
-                timage = imout[y:y + h, x:x + w]
-                resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
-                img = np.expand_dims(resized, axis=0)
-                out = model_final.predict(img)
-                #out= model_saved.predict(img)
+for e, i in enumerate(os.listdir(pathPred)):
+    filenameRes = i.split(".")[0]
+    z += 1
+    img = cv2.imread(os.path.join(pathPred, i))
+    ss.setBaseImage(img)
+    ss.switchToSelectiveSearchQuality()
+    ssresults = ss.process()
+    imout = img.copy()
+    for e, result in enumerate(ssresults):
+        if e < 4000:
+            x, y, w, h = result
+            timage = imout[y:y + h, x:x + w]
+            resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
+            img = np.expand_dims(resized, axis=0)
+            out = model_final.predict(img)
+            #out= model_saved.predict(img)
+            #print(out[0][0])
+            if out[0][0] > 0.9:
                 #print(out[0][0])
-                if out[0][0] > 0.8:
-                    #print(out[0][0])
-                    cv2.rectangle(imout, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
-                    cv2.putText(imout, str("%.2f" % round(out[0][0],2)), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
-        plt.figure()
-        plt.imshow(imout)
-        plt.show()
-        break
+                cv2.rectangle(imout, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(imout, str("%.2f" % round(out[0][0],2)), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
+    plt.figure()
+    plt.imshow(imout)
+    plt.show()
+    cv2.imwrite('result/lrm/result{}.png'.format(filenameRes), imout)
+    # cv2.rectangle(copy,(s,u),(t,v),(0,0,255),2)
+

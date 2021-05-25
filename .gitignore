@@ -1,3 +1,8 @@
 /ieeercnn_resnet_1.h5
 /ieeercnn_resnet_lrm_1.h5
 /ieeercnn_resnet_openness_1.h5
+/ieeercnn_resnet_lrm_1_exp.h5
+
+#pictures
+/ROI
+/result

@@ -5,7 +5,7 @@ import numpy as np
 
 
 path = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Images\28042021' + '\\'
-annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations' + '\\'
+annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\new_120521' + '\\'
 
 
 cpt = sum([len(files) for r, d, files in os.walk(path)])
@@ -13,14 +13,14 @@ print(cpt)
 
 bboxNew = []
 
-img = cv2.imread(os.path.join(path, '119.png'))
+img = cv2.imread(os.path.join(path, '72.png'))
 
 for e, i in enumerate(os.listdir(annot)):
     if e < 10:
         filename = i.split(".")[0] + ".png"
         print(filename)
-        img = cv2.imread(os.path.join(path, '119.png'))
-        df = pd.read_csv(os.path.join(annot, '119.csv'))
+        img = cv2.imread(os.path.join(path, '72.png'))
+        df = pd.read_csv(os.path.join(annot, '72.csv'))
         plt.imshow(img)
         plt.show()
         for row in df.iterrows():
@@ -28,12 +28,12 @@ for e, i in enumerate(os.listdir(annot)):
             y1 = int(row[1][0].split(" ")[1])
             x2 = int(row[1][0].split(" ")[2])
             y2 = int(row[1][0].split(" ")[3])
-            x11 = x1 + 3
-            x21 = x2 - 3
-            y11 = y1 + 3
-            y21 = y2 - 3
-            cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 0), 2)
-            cv2.rectangle(img, (x11, y11), (x21, y21), (0, 255, 0), 2)
+            x11 = x1 + 2
+            x21 = x2 - 2
+            y11 = y1 + 2
+            y21 = y2 - 2
+            #cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 0), 2)
+            #cv2.rectangle(img, (x11, y11), (x21, y21), (0, 255, 0), 2)
             bbox = {'x1': x11,
                     'x2': x21,
                     'y1': y11,
