@@ -26,13 +26,13 @@ from tensorflow.keras.applications.resnet50 import ResNet50
 
 
 path = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Images\28042021' + '\\'
-annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\new_120521' + '\\'
+annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\old_lrm' + '\\'
 
 cv2.setUseOptimized(True);
 ss = cv2.ximgproc.segmentation.createSelectiveSearchSegmentation()
 
 ############################ Load Model ##########################################################
-model_saved = load_model('ieeercnn_resnet_lrm_1.h5')
+model_saved = load_model('ieeercnn_resnet_lrm_1_exp.h5')
 
 ############################ Predict model #######################################################
 
@@ -58,21 +58,22 @@ def get_iou(bb1, bb2):
     assert iou <= 1.0
     return iou
 
-pathTest = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Training_Ost_PNG' + '\\'
 
 
-
-
+pathOst = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Training_Ost_PNG' + '\\'
+pathPred = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Images\28042021' + '\\'
+resultPath = r'C:\Users\jteck\Documents\Uni\Masterarbeit\python\result\lrm'
 z = 0
 tp = []
 fp = []
 fn = []
+cnt = 0
 
-for e, i in enumerate(os.listdir(path)):
-    if i.startswith("116.png"):
+for e, i in enumerate(os.listdir(pathPred)):
+    if i.startswith("118.png"):
         z += 1
         #read test bbox
-        df = pd.read_csv(os.path.join(annot, '116.csv'))
+        df = pd.read_csv(os.path.join(annot, '118.csv'))
         gtvalues = []
         predvalues = []
         for row in df.iterrows():
@@ -81,7 +82,7 @@ for e, i in enumerate(os.listdir(path)):
             x2 = int(row[1][0].split(" ")[2])
             y2 = int(row[1][0].split(" ")[3])
             gtvalues.append({"x1": x1, "x2": x2, "y1": y1, "y2": y2})
-        img = cv2.imread(os.path.join(path, i))
+        img = cv2.imread(os.path.join(pathPred, i))
         ss.setBaseImage(img)
         ss.switchToSelectiveSearchQuality()
         ssresults = ss.process()
@@ -94,16 +95,20 @@ for e, i in enumerate(os.listdir(path)):
                 img = np.expand_dims(resized, axis=0)
                 out = model_saved.predict(img)
                 #out= model_saved.predict(img)
-                print(out[0][0])
+                #print(out[0][0])
                 if out[0][0] > 0.70:
                     for gtval in gtvalues:
-                        print(x,y,x+w,y+h)
+                        #print(x,y,x+w,y+h)
                         #calculate iou for predicted img
                         iou = get_iou(gtval, {"x1": x, "x2": x + w, "y1": y, "y2": y + h})
                         print(iou)
                         # print(out[0][0])
-                        cv2.rectangle(imout, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
-                        cv2.putText(imout, str("%.2f" % round(out[0][0],2)), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
+                        #cv2.rectangle(imout, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
+                        #cv2.putText(imout, str("%.2f" % round(out[0][0],2)), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
+                        if(iou > .05):
+                            cv2.rectangle(imout, (x, y), (x + w, y + h), (0, 255, 0), 1, cv2.LINE_AA)
+                            cv2.putText(imout, str("%.2f" % round(out[0][0], 2)), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
+                            cnt += 1
         plt.figure()
         plt.imshow(imout)
         plt.show()

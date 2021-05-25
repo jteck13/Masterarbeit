@@ -218,7 +218,7 @@ testdata = tsdata.flow(x=X_test, y=y_test, batch_size=BATCH_SIZE)
 
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 
-checkpoint = ModelCheckpoint("ieeercnn_resnet_lrm_1_exp.h5", monitor='val_loss', verbose=1, save_best_only=True,
+checkpoint = ModelCheckpoint("ieeercnn_resnet_lrm_1_exp1.h5", monitor='val_loss', verbose=1, save_best_only=True,
                              save_weights_only=False, mode='auto', period=1)
 early = EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=1, mode='auto')
 history = model_final.fit_generator(generator=traindata, steps_per_epoch=steps_per_epoch, epochs=1000,
@@ -250,7 +250,7 @@ plt.show()
 
 
 ############################ Load Model ##########################################################
-model_saved = load_model('ieeercnn_resnet_lrm_1_exp.h5')
+model_saved = load_model('ieeercnn_resnet_lrm_1_exp1.h5')
 
 ############################ Predict model #######################################################
 
@@ -282,6 +282,6 @@ for e, i in enumerate(os.listdir(pathPred)):
     plt.figure()
     plt.imshow(imout)
     plt.show()
-    cv2.imwrite('result/lrm/result{}.png'.format(filenameRes), imout)
+    cv2.imwrite('result/lrm/25052021_/result{}.png'.format(filenameRes), imout)
     # cv2.rectangle(copy,(s,u),(t,v),(0,0,255),2)
 
