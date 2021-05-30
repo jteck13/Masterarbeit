@@ -59,9 +59,6 @@ for i, rect in (enumerate(rects)):
 plt.imshow(imOut)
 plt.show()
 
-train_images = []
-train_labels = []
-
 
 def get_iou(bb1, bb2):
     assert bb1['x1'] < bb1['x2']
@@ -85,12 +82,18 @@ def get_iou(bb1, bb2):
 
 
 ss = cv2.ximgproc.segmentation.createSelectiveSearchSegmentation()
-counter = 0
-falsecounter = 0
+
+
+train_images = []
+train_labels = []
+
+cntPosCum = 0
+cntNegCum = 0
+
 for e, i in enumerate(os.listdir(annot)):
     try:
         filename = i.split(".")[0] + ".png"
-        #print(e, filename)
+        print(e, filename)
         image = cv2.imread(os.path.join(path, filename))
         df = pd.read_csv(os.path.join(annot, i))
         gtvalues = []
@@ -104,16 +107,19 @@ for e, i in enumerate(os.listdir(annot)):
         ss.switchToSelectiveSearchQuality()
         ssresults = ss.process()
         imout = image.copy()
+        counter = 0
+        falsecounter = 0
         flag = 0
         fflag = 0
         bflag = 0
+
         for e, result in enumerate(ssresults):
-            if e < 8000 and flag == 0:
+            if e < 4000 and flag == 0:
                 for gtval in gtvalues:
                     x, y, w, h = result
                     iou = get_iou(gtval, {"x1": x, "x2": x + w, "y1": y, "y2": y + h})
-                    if counter < 60:
-                        if iou >= 0.5:
+                    if counter < 30:
+                        if iou > 0.5:
                             timage = imout[y:y + h, x:x + w]
                             resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
                             train_images.append(resized)
@@ -121,26 +127,31 @@ for e, i in enumerate(os.listdir(annot)):
                             counter += 1
                     else:
                         fflag = 1
-                    if falsecounter < 60:
-                        if iou < 0.5:
-                            timage = imout[y:y + h, x:x + w]
-                            resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
-                            train_images.append(resized)
-                            train_labels.append(0)
-                            falsecounter += 1
+                    if falsecounter < 30:
+                        if iou < 0.3:
+                            if (cntPosCum >= cntNegCum):
+                                timage = imout[y:y + h, x:x + w]
+                                resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
+                                train_images.append(resized)
+                                train_labels.append(0)
+                                falsecounter += 1
                             # print("outside")
                     else:
                         bflag = 1
                 if fflag == 1 and bflag == 1:
-                    #print("inside")
+                    print("inside")
                     flag = 1
+        print(counter)
+        cntPosCum = cntPosCum + counter
+        cntNegCum = cntNegCum + falsecounter
     except Exception as e:
         print(e)
         print("error in " + filename)
         continue
 
-print("positive cnt: " + str(counter))
-print("negative cnt: " + str(falsecounter))
+print("Count positive samples: " +str(cntPosCum))
+print("Count negative samples: " +str(cntNegCum))
+
 
 X_new = np.array(train_images)
 y_new = np.array(train_labels)
@@ -153,6 +164,9 @@ from tensorflow.keras import Model
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications.resnet50 import ResNet50
+from tensorflow.keras.callbacks import TensorBoard
+import time
+import pickle
 
 print('#################################### Training ##############')
 print('#################################### Training ##############')
@@ -160,6 +174,8 @@ print('#################################### Training ##############')
 print('#################################### Training ##############')
 
 BATCH_SIZE = 8
+NAME = "resnet_openness_{}".format(int(time.time()))
+tensorboard = TensorBoard(log_dir='logs/{}'.format(NAME))
 resnetModel = ResNet50(weights='imagenet', include_top=True)
 resnetModel.summary()
 
@@ -223,7 +239,7 @@ checkpoint = ModelCheckpoint("ieeercnn_resnet_lrm_1.h5", monitor='val_loss', ver
 early = EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=1, mode='auto')
 history = model_final.fit_generator(generator=traindata, steps_per_epoch=steps_per_epoch, epochs=1000,
                                  validation_data=testdata, validation_steps=validation_steps,
-                                 callbacks=[checkpoint, early])
+                                 callbacks=[checkpoint, early, tensorboard])
 
 
 ############################ Evaluate ############################################################
@@ -251,6 +267,60 @@ plt.show()
 
 ############################ Load Model ##########################################################
 model_saved = load_model('ieeercnn_resnet_lrm.h5')
+
+
+########################### evaluate #############################################################
+
+
+from sklearn.metrics import confusion_matrix
+
+y_pred=model_final.predict(X_test, batch_size=8, verbose=1)
+y_pred=np.argmax(y_pred, axis=1)
+y_test=np.argmax(y_test, axis=1)
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+
+
+from sklearn.datasets import make_circles
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import cohen_kappa_score
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import confusion_matrix
+
+yhat = model_final.predict(X_test, batch_size= 8, verbose=1)
+
+# reduce to 1d array
+yhat_probs = yhat[:, 1]
+yhat_classes = y_pred
+
+# accuracy: (tp + tn) / (p + n)
+accuracy = accuracy_score(y_test, yhat_classes)
+print('Accuracy: %f' % accuracy)
+# precision tp / (tp + fp)
+precision = precision_score(y_test, yhat_classes)
+print('Precision: %f' % precision)
+# recall: tp / (tp + fn)
+recall = recall_score(y_test, yhat_classes)
+print('Recall: %f' % recall)
+# f1: 2 tp / (2 tp + fp + fn)
+f1 = f1_score(y_test, yhat_classes)
+print('F1 score: %f' % f1)
+
+
+# kappa
+kappa = cohen_kappa_score(y_test, yhat_classes)
+print('Cohens kappa: %f' % kappa)
+# ROC AUC
+auc = roc_auc_score(y_test, yhat_probs)
+print('ROC AUC: %f' % auc)
+# confusion matrix
+matrix = confusion_matrix(y_test, yhat_classes)
+print(matrix)
+
+
 
 ############################ Predict model #######################################################
 

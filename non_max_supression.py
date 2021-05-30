@@ -97,14 +97,18 @@ tp = []
 fp = []
 fn = []
 cnt = 0
+ct = 0
+
+resultDict = []
+finalDict = []
 
 
 for e, i in enumerate(os.listdir(pathOpen)):
-    if i.startswith("184.png"):
+    if i.startswith("118.png"):
         filenameRes = i.split(".")[0]
         z += 1
         #read test bbox
-        df = pd.read_csv(os.path.join(annotOpen, '184.csv'))
+        df = pd.read_csv(os.path.join(annotOpen, '118.csv'))
         gtvalues = []
         predvalues = []
         for row in df.iterrows():
@@ -125,7 +129,7 @@ for e, i in enumerate(os.listdir(pathOpen)):
                 resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
                 img = np.expand_dims(resized, axis=0)
                 out = model_saved.predict(img)
-                iou_nomaxNew = {"x1": x, "x2": x + w, "y1": y, "y2": y + h}
+
                 #out= model_saved.predict(img)
                 #print(out[0][0])
                 if out[0][0] > 0.0:
@@ -133,20 +137,73 @@ for e, i in enumerate(os.listdir(pathOpen)):
                         #print(x,y,x+w,y+h)
                         #calculate iou for predicted img
                         iou = get_iou(gtval, {"x1": x, "x2": x + w, "y1": y, "y2": y + h})
-                        # print(out[0][0])
                         #cv2.rectangle(imout, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
                         #cv2.putText(imout, str("%.2f" % round(out[0][0],2)), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
-                        if(iou > .5):
+
+                        if (iou > .5):
+                            resultDict.append({"x1": x, "x2": x + w, "y1": y, "y2": y + h, "iou": iou})
                             cv2.rectangle(imout, (x, y), (x + w, y + h), (0, 255, 0), 1, cv2.LINE_AA)
-                            cv2.putText(imout, str("%.2f" % round(out[0][0], 2)), (x - 20, y - 5), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
-                            cv2.putText(imout, str("%.2f" % round(iou, 2)), (x - 15, y + 30), cv2.FONT_HERSHEY_SIMPLEX,.5, (255, 36, 12), 2)
+                            cv2.putText(imout, str("%.2f" % round(out[0][0], 2)), (x - 20, y - 5),
+                                        cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
+                            cv2.putText(imout, str("%.2f" % round(iou, 2)), (x - 15, y + 30), cv2.FONT_HERSHEY_SIMPLEX,
+                                        .5, (255, 36, 12), 2)
                             cnt += 1
-                            print(iou)
-                            print(out[0][0])
+                            #print(iou)
+                            #print(out[0][0])
+
+
+        for i in range(len(resultDict)-1):
+            print("neu schleie resultDict")
+            #list is empty
+            if not finalDict:
+                print("if empty hier")
+                finalDict.append(resultDict[i])
+            for x in range(len(finalDict)):
+                iou_nomaxNew = {"x1": finalDict[x]['x1'], "x2": finalDict[x]['x2'], "y1": finalDict[x]['y1'],
+                                "y2": finalDict[x]['y2']}
+                print(iou_nomaxNew)
+                iouNew = get_iou(iou_nomaxNew, resultDict[i])
+                print(iouNew)
+                print(finalDict)
+                print("neue schleife final")
+                if(iouNew > 0.7):
+                    print("größer als 0.7")
+                    #finalDict.pop(x)
+                    finalDict.append(resultDict[i])
+                    #print(iouNew)
+
+
+
         plt.figure()
         plt.imshow(imout)
         plt.show()
-        print(cnt)
+        print(len(finalDict))
         #cv2.imwrite('result/openness/result{}.png'.format(filenameRes), imout)
         break
 
+
+def non_max_suppression_slow(boxes, overlapThresh):
+	# if there are no boxes, return an empty list
+	if len(boxes) == 0:
+		return []
+	# initialize the list of picked indexes
+	pick = []
+	# grab the coordinates of the bounding boxes
+	x1 = boxes[:,0]
+	y1 = boxes[:,1]
+	x2 = boxes[:,2]
+	y2 = boxes[:,3]
+	# compute the area of the bounding boxes and sort the bounding
+	# boxes by the bottom-right y-coordinate of the bounding box
+	area = (x2 - x1 + 1) * (y2 - y1 + 1)
+	idxs = np.argsort(y2)
+
+
+
+if(iou > .5):
+    cv2.rectangle(imout, (x, y), (x + w, y + h), (0, 255, 0), 1, cv2.LINE_AA)
+    cv2.putText(imout, str("%.2f" % round(out[0][0], 2)), (x - 20, y - 5), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
+    cv2.putText(imout, str("%.2f" % round(iou, 2)), (x - 15, y + 30), cv2.FONT_HERSHEY_SIMPLEX,.5, (255, 36, 12), 2)
+    cnt += 1
+    print(iou)
+    print(out[0][0])

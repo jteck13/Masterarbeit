@@ -52,15 +52,12 @@ rects = ss.process()
 imOut = im.copy()
 for i, rect in (enumerate(rects)):
     x, y, w, h = rect
-    print(x,y,w,h)
+    #     print(x,y,w,h)
     #     imOut = imOut[x:x+w,y:y+h]
     cv2.rectangle(imOut, (x, y), (x + w, y + h), (0, 255, 0), 1, cv2.LINE_AA)
 # plt.figure()
 plt.imshow(imOut)
 plt.show()
-
-train_images = []
-train_labels = []
 
 
 def get_iou(bb1, bb2):
@@ -84,7 +81,15 @@ def get_iou(bb1, bb2):
     return iou
 
 
+
 ss = cv2.ximgproc.segmentation.createSelectiveSearchSegmentation()
+
+
+train_images = []
+train_labels = []
+
+cntPosCum = 0
+cntNegCum = 0
 
 for e, i in enumerate(os.listdir(annot)):
     try:
@@ -108,13 +113,14 @@ for e, i in enumerate(os.listdir(annot)):
         flag = 0
         fflag = 0
         bflag = 0
+
         for e, result in enumerate(ssresults):
-            if e < 8000 and flag == 0:
+            if e < 4000 and flag == 0:
                 for gtval in gtvalues:
                     x, y, w, h = result
                     iou = get_iou(gtval, {"x1": x, "x2": x + w, "y1": y, "y2": y + h})
                     if counter < 30:
-                        if iou > 0.4:
+                        if iou > 0.5:
                             timage = imout[y:y + h, x:x + w]
                             resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
                             train_images.append(resized)
@@ -123,12 +129,13 @@ for e, i in enumerate(os.listdir(annot)):
                     else:
                         fflag = 1
                     if falsecounter < 30:
-                        if iou < 0.6:
-                            timage = imout[y:y + h, x:x + w]
-                            resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
-                            train_images.append(resized)
-                            train_labels.append(0)
-                            falsecounter += 1
+                        if iou < 0.3:
+                            if (cntPosCum >= cntNegCum):
+                                timage = imout[y:y + h, x:x + w]
+                                resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
+                                train_images.append(resized)
+                                train_labels.append(0)
+                                falsecounter += 1
                             # print("outside")
                     else:
                         bflag = 1
@@ -136,10 +143,16 @@ for e, i in enumerate(os.listdir(annot)):
                     print("inside")
                     flag = 1
         print(counter)
+        cntPosCum = cntPosCum + counter
+        cntNegCum = cntNegCum + falsecounter
     except Exception as e:
         print(e)
         print("error in " + filename)
         continue
+
+print("Count positive samples: " +str(cntPosCum))
+print("Count negative samples: " +str(cntNegCum))
+
 
 X_new = np.array(train_images)
 y_new = np.array(train_labels)
@@ -152,16 +165,21 @@ from tensorflow.keras import Model
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
 from tensorflow.keras.applications.resnet50 import ResNet50
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.callbacks import TensorBoard
+import time
+import pickle
 
 print('#################################### Training ##############')
 print('#################################### Training ##############')
 print('#################################### Training ##############')
 print('#################################### Training ##############')
 
-BATCH_SIZE =32
+BATCH_SIZE = 8
+NAME = "resnet_openness_{}".format(int(time.time()))
+tensorboard = TensorBoard(log_dir='logs/{}'.format(NAME))
 resnetModel = ResNet50(weights='imagenet', include_top=True)
 resnetModel.summary()
-
 for layers in (resnetModel.layers)[:15]:
     print(layers)
     layers.trainable = False
@@ -170,7 +188,7 @@ X = resnetModel.layers[-2].output
 predictions = Dense(2, activation="softmax")(X)
 model_final = Model(resnetModel.input, predictions)
 opt = Adam(lr=0.0001)
-model_final.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=opt, metrics=["accuracy"])
+model_final.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=opt, metrics=["accuracy"] )
 model_final.summary()
 
 from sklearn.model_selection import train_test_split
@@ -217,12 +235,15 @@ testdata = tsdata.flow(x=X_test, y=y_test, batch_size=BATCH_SIZE)
 
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 
-checkpoint = ModelCheckpoint("ieeercnn_resnet_openness_1.h5", monitor='val_loss', verbose=1, save_best_only=True,
+checkpoint = ModelCheckpoint("ieeercnn_resnet_openness_final.h5", monitor='val_loss', verbose=1, save_best_only=True,
                              save_weights_only=False, mode='auto', period=1)
 early = EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=1, mode='auto')
 history = model_final.fit_generator(generator=traindata, steps_per_epoch=steps_per_epoch, epochs=1000,
                                  validation_data=testdata, validation_steps=validation_steps,
-                                 callbacks=[checkpoint, early])
+                                 callbacks=[checkpoint, early, tensorboard])
+
+
+
 
 
 ############################ Evaluate ############################################################
@@ -245,15 +266,75 @@ plt.show()
 
 
 
+
+
+
+
+
+from sklearn.metrics import classification_report
+
 ############################ Load Model ##########################################################
-model_saved = load_model('ieeercnn_resnet_openness_1.h5')
+model_savedOpenness = load_model('ieeercnn_resnet_openness_final.h5')
 
 ############################ Predict model #######################################################
 
 pathTest = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Training_Ost_PNG' + '\\'
 
-z = 0
 
+############################ Evaluation ##########################################################
+
+from sklearn.metrics import confusion_matrix
+
+y_pred=model_final.predict(X_test, batch_size=8, verbose=1)
+y_pred=np.argmax(y_pred, axis=1)
+y_test=np.argmax(y_test, axis=1)
+cm = confusion_matrix(y_test, y_pred)
+print(cm)
+
+
+from sklearn.datasets import make_circles
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import precision_score
+from sklearn.metrics import recall_score
+from sklearn.metrics import f1_score
+from sklearn.metrics import cohen_kappa_score
+from sklearn.metrics import roc_auc_score
+from sklearn.metrics import confusion_matrix
+
+yhat = model_final.predict(X_test, batch_size= 8, verbose=1)
+
+# reduce to 1d array
+yhat_probs = yhat[:, 1]
+yhat_classes = y_pred
+
+# accuracy: (tp + tn) / (p + n)
+accuracy = accuracy_score(y_test, yhat_classes)
+print('Accuracy: %f' % accuracy)
+# precision tp / (tp + fp)
+precision = precision_score(y_test, yhat_classes)
+print('Precision: %f' % precision)
+# recall: tp / (tp + fn)
+recall = recall_score(y_test, yhat_classes)
+print('Recall: %f' % recall)
+# f1: 2 tp / (2 tp + fp + fn)
+f1 = f1_score(y_test, yhat_classes)
+print('F1 score: %f' % f1)
+
+
+# kappa
+kappa = cohen_kappa_score(y_test, yhat_classes)
+print('Cohens kappa: %f' % kappa)
+# ROC AUC
+auc = roc_auc_score(y_test, yhat_probs)
+print('ROC AUC: %f' % auc)
+# confusion matrix
+matrix = confusion_matrix(y_test, yhat_classes)
+print(matrix)
+
+
+
+
+z = 0
 for e, i in enumerate(os.listdir(path)):
     if i.startswith("118.png"):
         z += 1
@@ -274,7 +355,7 @@ for e, i in enumerate(os.listdir(path)):
                 if out[0][0] > 0.98:
                     #print(out[0][0])
                     cv2.rectangle(imout, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
-                    cv2.putText(imout, str("%.2f" % round(out[0][0],2)), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
+                    cv2.putText(imout, str("%.2f" % np.round(out[0][0],2)), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
         plt.figure()
         plt.imshow(imout)
         plt.show()
