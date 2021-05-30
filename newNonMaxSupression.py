@@ -29,29 +29,6 @@ from tensorflow.keras.applications.resnet50 import ResNet50
 pathShow = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\vorübergehend\img' + '\\'
 annotShow = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\old_lrm' + '\\'
 
-cpt = sum([len(files) for r, d, files in os.walk(pathShow)])
-print(cpt)
-
-for e, i in enumerate(os.listdir(pathShow)):
-    if e < 10:
-        filename = i.split(".")[0] + ".png"
-        print(filename)
-        img = cv2.imread(os.path.join(pathShow, '134.png'))
-        df = pd.read_csv(os.path.join(annotShow, '134.csv'))
-        #plt.imshow(img)
-        #plt.show()
-        for row in df.iterrows():
-            x1 = int(row[1][0].split(" ")[0])
-            y1 = int(row[1][0].split(" ")[1])
-            x2 = int(row[1][0].split(" ")[2])
-            y2 = int(row[1][0].split(" ")[3])
-            cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 0), 2)
-        plt.figure()
-        plt.imshow(img)
-        plt.show()
-        break
-
-
 
 cv2.setUseOptimized(True);
 ss = cv2.ximgproc.segmentation.createSelectiveSearchSegmentation()
@@ -170,11 +147,11 @@ resultDict = []
 
 
 for e, i in enumerate(os.listdir(pathOpen)):
-    if i.startswith("184.png"):
+    if i.startswith("134.png"):
         filenameRes = i.split(".")[0]
         z += 1
         #read test bbox
-        df = pd.read_csv(os.path.join(annotOpen, '184.csv'))
+        df = pd.read_csv(os.path.join(annotOpen, '134.csv'))
         gtvalues = []
         predvalues = []
         for row in df.iterrows():
@@ -206,7 +183,7 @@ for e, i in enumerate(os.listdir(pathOpen)):
                         #cv2.rectangle(imout, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
                         #cv2.putText(imout, str("%.2f" % round(out[0][0],2)), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
 
-                        if (iou > .5):
+                        if (iou > 0.5):
                             thistuple = (x,y,x+w,y+h,iou,out[0][0])
                             resultDict.append(thistuple)
                             boundingBoxes = np.array(resultDict)
@@ -224,20 +201,28 @@ for e, i in enumerate(os.listdir(pathOpen)):
                             #print(out[0][0])
 
         # hier gehts weiter
-        pick = non_max_suppression_slow(boundingBoxes, 0.5)
-        for (startX, startY, endX, endY, iou, pred) in pick:
-            cv2.rectangle(imout, (int(startX), int(startY)), (int(endX), int(endY)), (0, 255, 0), 2)
-            cv2.putText(imout, str("%.2f" % round(pred, 2)), (int(startX), int(startY) - 5),
-                        cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
-            cv2.putText(imout, str("%.2f" % round(iou, 2)), (int(startX) - 15, int(startY) + 30), cv2.FONT_HERSHEY_SIMPLEX,
-                        .5, (255, 36, 12), 2)
-            print(pred)
-            print(iou)
+        try:
+            boundingBoxes
+        except NameError:
+            print("no boundingoxes found")
+        else:
+
+            pick = non_max_suppression_slow(boundingBoxes, 0.3)
+            for (startX, startY, endX, endY, iou, pred) in pick:
+                cv2.rectangle(imout, (int(startX), int(startY)), (int(endX), int(endY)), (0, 255, 0), 2)
+                cv2.putText(imout, str("%.2f" % round(pred, 2)), (int(startX), int(startY) - 5),
+                            cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
+                cv2.putText(imout, str("%.2f" % round(iou, 2)), (int(startX) - 15, int(startY) + 30), cv2.FONT_HERSHEY_SIMPLEX,
+                            .5, (255, 36, 12), 2)
+                print("pred")
+                print(pred)
+                print("iou")
+                print(iou)
 
         plt.figure()
         plt.imshow(imout)
         plt.show()
-        #cv2.imwrite('result/openness/result{}.png'.format(filenameRes), imout)
+        # cv2.imwrite('result/openness/result{}.png'.format(filenameRes), imout)
         break
 
 
