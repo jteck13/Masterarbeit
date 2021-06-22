@@ -5,7 +5,7 @@ import numpy as np
 
 
 path = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Images\28042021' + '\\'
-annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\new_120521' + '\\'
+annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\old_lrm' + '\\'
 
 
 cpt = sum([len(files) for r, d, files in os.walk(path)])
@@ -18,9 +18,8 @@ img = cv2.imread(os.path.join(path, '72.png'))
 for e, i in enumerate(os.listdir(annot)):
     if e < 10:
         filename = i.split(".")[0] + ".png"
-        print(filename)
-        img = cv2.imread(os.path.join(path, '72.png'))
-        df = pd.read_csv(os.path.join(annot, '72.csv'))
+        img = cv2.imread(os.path.join(path, '73.png'))
+        df = pd.read_csv(os.path.join(annot, '73.csv'))
         plt.imshow(img)
         plt.show()
         for row in df.iterrows():
@@ -32,7 +31,7 @@ for e, i in enumerate(os.listdir(annot)):
             x21 = x2 - 2
             y11 = y1 + 2
             y21 = y2 - 2
-            #cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 0), 2)
+            cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 0), 2)
             #cv2.rectangle(img, (x11, y11), (x21, y21), (0, 255, 0), 2)
             bbox = {'x1': x11,
                     'x2': x21,
@@ -60,11 +59,10 @@ for d in range(len(bboxNew)):
     end = {t, v}
     for c in bboxNew[d]:
         roi = img[u:v, s:t]
-        cv2.imwrite('ROI/ROI_{}.png'.format(ROI_number), roi)
+        cv2.imwrite('ROI/167/ROI_{}.png'.format(ROI_number), roi)
         #cv2.rectangle(copy,(s,u),(t,v),(0,0,255),2)
         ROI_number += 1
         break
-
 
 
 ############# insert rois in image #####################

@@ -30,7 +30,7 @@ cv2.setUseOptimized(True);
 ss = cv2.ximgproc.segmentation.createSelectiveSearchSegmentation()
 
 ############################ Load Model ##########################################################
-model_saved = load_model('ieeercnn_vgg16_openness_final1.h5')
+model_saved = load_model('ieeercnn_resnet_lrm_augment_final1.h5')
 
 ############################ Predict model #######################################################
 
@@ -117,8 +117,8 @@ def non_max_suppression_slow(boxes, overlapThresh):
 #pathOpen = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Images\28042021' + '\\'
 #annotOpen = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\old_lrm' + '\\'
 
-pathOpen = 'test/openness/imgs'
-annotOpen = 'test/openness/annot'
+pathOpen = 'test/lrm'
+annotOpen = 'test/annot'
 
 
 z = 0
@@ -154,7 +154,7 @@ for e, i in enumerate(os.listdir(pathOpen)):
                 resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
                 img = np.expand_dims(resized, axis=0)
                 out = model_saved.predict(img)
-                if out[0][0] > 0.3:
+                if out[0][0] > 0.0:
                     for gtval in gtvalues:
                         #calculate iou for predicted img
                         iou = get_iou(gtval, {"x1": x, "x2": x + w, "y1": y, "y2": y + h})
