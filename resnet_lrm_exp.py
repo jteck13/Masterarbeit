@@ -18,11 +18,8 @@ if gpus:
         print(e)
 from tensorflow.keras.optimizers import Adam
 
-#path = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Images\28042021' + '\\'
-#annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\old_lrm' + '\\'
-
-path = 'test/lrm'
-annot = 'test/annot'
+path = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Experiment_22042021' + '\\'
+annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\experiment' + '\\'
 
 cpt = sum([len(files) for r, d, files in os.walk(path)])
 print(cpt)
@@ -31,8 +28,8 @@ for e, i in enumerate(os.listdir(annot)):
     if e < 10:
         filename = i.split(".")[0] + ".png"
         print(filename)
-        img = cv2.imread(os.path.join(path, '184.png'))
-        df = pd.read_csv(os.path.join(annot, '184.csv'))
+        img = cv2.imread(os.path.join(path, '118.png'))
+        df = pd.read_csv(os.path.join(annot, '118.csv'))
         #plt.imshow(img)
         #plt.show()
         for row in df.iterrows():
@@ -123,7 +120,7 @@ for e, i in enumerate(os.listdir(annot)):
                     x, y, w, h = result
                     iou = get_iou(gtval, {"x1": x, "x2": x + w, "y1": y, "y2": y + h})
                     if counter < 30:
-                        if iou > 0.7:
+                        if iou > 0.5:
                             timage = imout[y:y + h, x:x + w]
                             resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
                             flip1 = augmentation.flip_image(resized, 0)  # horizontal
@@ -173,8 +170,8 @@ for e, i in enumerate(os.listdir(annot)):
                     else:
                         fflag = 1
                     if falsecounter < 30:
-                        if iou < 0.2:
-                            if (falsecounter < 60):
+                        if iou < 0.3:
+                            if (cntPosCum >= cntNegCum):
                                 timage = imout[y:y + h, x:x + w]
                                 resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
                                 train_images.append(resized)
@@ -279,7 +276,7 @@ testdata = tsdata.flow(x=X_test, y=y_test, batch_size=BATCH_SIZE)
 
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 
-checkpoint = ModelCheckpoint("ieeercnn_resnet_lrm_final2.h5", monitor='val_loss', verbose=1, save_best_only=True,
+checkpoint = ModelCheckpoint("ieeercnn_resnet_lrm_exp_final.h5", monitor='val_loss', verbose=1, save_best_only=True,
                              save_weights_only=False, mode='auto', period=1)
 early = EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=1, mode='auto')
 history = model_final.fit_generator(generator=traindata, steps_per_epoch=steps_per_epoch, epochs=1000,
@@ -311,7 +308,7 @@ plt.show()
 
 
 ############################ Load Model ##########################################################
-model_saved_lrm = load_model('ieeercnn_resnet_lrm_final2.h5')
+model_saved_lrm = load_model('ieeercnn_resnet_lrm_exp_final.h5')
 
 
 ########################### evaluate #############################################################
@@ -367,24 +364,47 @@ print(matrix)
 
 
 
+############################ Predict model #######################################################
+
+pathOst = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Training_Ost_PNG' + '\\'
+pathPred = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Images\28042021' + '\\'
+z = 0
+
+for e, i in enumerate(os.listdir(pathPred)):
+    filenameRes = i.split(".")[0]
+    z += 1
+    img = cv2.imread(os.path.join(pathPred, i))
+    ss.setBaseImage(img)
+    ss.switchToSelectiveSearchQuality()
+    ssresults = ss.process()
+    imout = img.copy()
+    for e, result in enumerate(ssresults):
+        if e < 4000:
+            x, y, w, h = result
+            timage = imout[y:y + h, x:x + w]
+            resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
+            img = np.expand_dims(resized, axis=0)
+            out = model_final.predict(img)
+            #out= model_saved.predict(img)
+            #print(out[0][0])
+            if out[0][0] > 0.9:
+                #print(out[0][0])
+                cv2.rectangle(imout, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
+                cv2.putText(imout, str("%.2f" % round(out[0][0],2)), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
+    plt.figure()
+    plt.imshow(imout)
+    plt.show()
+    cv2.imwrite('result/lrm/25052021_/result{}.png'.format(filenameRes), imout)
+    # cv2.rectangle(copy,(s,u),(t,v),(0,0,255),2)
+
+
+
 
 z = 0
 
-for e, i in enumerate(os.listdir(path)):
+for e, i in enumerate(os.listdir(pathPred)):
     filenameRes = i.split(".")[0]
     z += 1
-    filename = i.split(".")[0] + ".png"
-    print(filename)
-    img = cv2.imread(os.path.join(path, '118.png'))
-    df = pd.read_csv(os.path.join(annot, '118.csv'))
-    # plt.imshow(img)
-    # plt.show()
-    for row in df.iterrows():
-        x1 = int(row[1][0].split(" ")[0])
-        y1 = int(row[1][0].split(" ")[1])
-        x2 = int(row[1][0].split(" ")[2])
-        y2 = int(row[1][0].split(" ")[3])
-        cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 0), 2)
-    plt.figure()
-    plt.imshow(img)
-    plt.show()
+    imgageneu = cv2.imread(os.path.join(pathPred, i))
+    resized = augmentation.resize_image(imgageneu, 500, 500)
+    cv2.imwrite('test/lrm/{}.png'.format(filenameRes), resized)

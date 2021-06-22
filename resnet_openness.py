@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
+from utility import augmentation
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -17,8 +18,8 @@ if gpus:
         print(e)
 from tensorflow.keras.optimizers import Adam
 
-path = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Images\12052021' + '\\'
-annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\new_120521' + '\\'
+path = 'test/openness/imgs'
+annot = 'test/openness/annot'
 
 cpt = sum([len(files) for r, d, files in os.walk(path)])
 print(cpt)
@@ -120,10 +121,51 @@ for e, i in enumerate(os.listdir(annot)):
                     x, y, w, h = result
                     iou = get_iou(gtval, {"x1": x, "x2": x + w, "y1": y, "y2": y + h})
                     if counter < 30:
-                        if iou > 0.5:
+                        if iou > 0.7:
                             timage = imout[y:y + h, x:x + w]
                             resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
+                            flip1 = augmentation.flip_image(resized, 0)  # horizontal
+                            flip2 = augmentation.flip_image(resized, 1)  # vertical
+                            flip3 = augmentation.flip_image(resized, -1)  # both
+                            translate1 = augmentation.translation_image(resized, 150, 150)
+                            translate2 = augmentation.translation_image(resized, -150, 150)
+                            translate3 = augmentation.translation_image(resized, 150, -150)
+                            translate4 = augmentation.translation_image(resized, -150, -150)
+                            rotate1 = augmentation.rotate_image(resized, 90)
+                            rotate2 = augmentation.rotate_image(resized, 180)
+                            rotate3 = augmentation.rotate_image(resized, 270)
+
                             train_images.append(resized)
+                            train_labels.append(1)
+                            counter += 1
+                            train_images.append(flip1)
+                            train_labels.append(1)
+                            counter += 1
+                            train_images.append(flip2)
+                            train_labels.append(1)
+                            counter += 1
+                            train_images.append(flip3)
+                            train_labels.append(1)
+                            counter += 1
+                            train_images.append(translate1)
+                            train_labels.append(1)
+                            counter += 1
+                            train_images.append(translate2)
+                            train_labels.append(1)
+                            counter += 1
+                            train_images.append(translate3)
+                            train_labels.append(1)
+                            counter += 1
+                            train_images.append(translate4)
+                            train_labels.append(1)
+                            counter += 1
+                            train_images.append(rotate1)
+                            train_labels.append(1)
+                            counter += 1
+                            train_images.append(rotate2)
+                            train_labels.append(1)
+                            counter += 1
+                            train_images.append(rotate3)
                             train_labels.append(1)
                             counter += 1
                     else:
@@ -187,7 +229,7 @@ for layers in (resnetModel.layers)[:15]:
 X = resnetModel.layers[-2].output
 predictions = Dense(2, activation="softmax")(X)
 model_final = Model(resnetModel.input, predictions)
-opt = Adam(lr=0.0001)
+opt = Adam(lr=0.00001)
 model_final.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=opt, metrics=["accuracy"] )
 model_final.summary()
 
@@ -235,7 +277,7 @@ testdata = tsdata.flow(x=X_test, y=y_test, batch_size=BATCH_SIZE)
 
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 
-checkpoint = ModelCheckpoint("ieeercnn_resnet_openness_final.h5", monitor='val_loss', verbose=1, save_best_only=True,
+checkpoint = ModelCheckpoint("ieeercnn_resnet_openness_final_res1.h5", monitor='val_loss', verbose=1, save_best_only=True,
                              save_weights_only=False, mode='auto', period=1)
 early = EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=1, mode='auto')
 history = model_final.fit_generator(generator=traindata, steps_per_epoch=steps_per_epoch, epochs=1000,
@@ -274,7 +316,7 @@ plt.show()
 from sklearn.metrics import classification_report
 
 ############################ Load Model ##########################################################
-model_savedOpenness = load_model('ieeercnn_resnet_openness_final.h5')
+model_savedOpenness = load_model('ieeercnn_resnet_openness_final_res1.h5')
 
 ############################ Predict model #######################################################
 
@@ -334,33 +376,11 @@ print(matrix)
 
 
 
-z = 0
-for e, i in enumerate(os.listdir(path)):
-    if i.startswith("118.png"):
-        z += 1
-        img = cv2.imread(os.path.join(path, i))
-        ss.setBaseImage(img)
-        ss.switchToSelectiveSearchQuality()
-        ssresults = ss.process()
-        imout = img.copy()
-        for e, result in enumerate(ssresults):
-            if e < 4000:
-                x, y, w, h = result
-                timage = imout[y:y + h, x:x + w]
-                resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
-                img = np.expand_dims(resized, axis=0)
-                out = model_final.predict(img)
-                #out= model_saved.predict(img)
-                #print(out[0][0])
-                if out[0][0] > 0.98:
-                    #print(out[0][0])
-                    cv2.rectangle(imout, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
-                    cv2.putText(imout, str("%.2f" % np.round(out[0][0],2)), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
-        plt.figure()
-        plt.imshow(imout)
-        plt.show()
-        break
+#z = 0
 
-
-
-
+#for e, i in enumerate(os.listdir(path)):
+#    filenameRes = i.split(".")[0]
+#    z += 1
+#    imgageneu = cv2.imread(os.path.join(path, i))
+#    resized = augmentation.resize_image(imgageneu, 500, 500)
+#    cv2.imwrite('test/openness/imgs/{}.png'.format(filenameRes), resized)

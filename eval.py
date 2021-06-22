@@ -35,8 +35,8 @@ for e, i in enumerate(os.listdir(pathShow)):
     if e < 10:
         filename = i.split(".")[0] + ".png"
         print(filename)
-        img = cv2.imread(os.path.join(pathShow, '134.png'))
-        df = pd.read_csv(os.path.join(annotShow, '134.csv'))
+        img = cv2.imread(os.path.join(pathShow, '119.png'))
+        df = pd.read_csv(os.path.join(annotShow, '119.csv'))
         #plt.imshow(img)
         #plt.show()
         for row in df.iterrows():
