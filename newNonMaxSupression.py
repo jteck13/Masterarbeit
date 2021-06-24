@@ -203,28 +203,20 @@ for e, i in enumerate(os.listdir(pathOpen)):
 
 del boundingBoxes
 
-
-#acc134 = [.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.03, 0.03, 0.03, 0.03, 0.03, 0.04, 0.05, 0.05, 0.06, 0.06, 0.1, 0.12, 0.14, 0.16, 0.17, 0.22, 0.22, 0.28, 0.37, 0.43, 0.45, 0.6, 0.72, 0.75, 0.84, 0.91, 0.91, 0.92, 0.93, 0.94, 0.98, 0.98, 0.98, 0.99, 0.99, 0.99, 1.0, 1.0, 1.0, 1.0, 1.0]
-#iou_acc134 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.8, 0.93]
-
 acc_all = acc134 + acc73
 iou_all = iou_acc134 + iou_acc73
 
 acc, iou_acc = zip(*sorted(zip(acc_all, iou_all)))
 
-print(acc)
-print(iou_acc)
+def createPred(acc, iou_acc, thresh):
+    prediction = []
+    for i,a in enumerate(acc):
+        if(acc[i] > thresh and iou_acc[i] > 0.5):
+            prediction.append("TP")
+        else:
+            prediction.append("FP")
+    return  prediction[::-1]
 
-prediction = []
-
-for i,a in enumerate(acc):
-    if(acc[i] > .5 and iou_acc[i] > 0.5):
-        prediction.append("TP")
-    else:
-        prediction.append("FP")
-
-
-print(prediction)
 
 def precisionRecall(predi):
     index = 0
@@ -247,20 +239,11 @@ def precisionRecall(predi):
         prec_list.append(precision)
         recall_list.append(recall)
         index = index + 1
-        print(recall)
     return prec_list, recall_list
 
 
-prediction_sorted = prediction[::-1]
+prediction_sorted = createPred(acc, iou_acc, 0.5)
 
-print(prediction)
 prec_list, recall_list = precisionRecall(prediction_sorted)
-print(recall_list)
-print(prec_list)
-
-
-
-#recall_list.reverse()
-
 
 precision_recall.print_printRecPrec(recall_list, prec_list)
