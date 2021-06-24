@@ -4,6 +4,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
 import tensorflow as tf
+from utility import precision_recall
 
 gpus = tf.config.experimental.list_physical_devices('GPU')
 if gpus:
@@ -231,10 +232,12 @@ def precisionRecall(predi):
     acu_fp = 0
     prec_list= []
     recall_list = []
-    for item in predi[::-1]:
+    precision = 0
+    recall = 0
+    for i in range(len(predi)):
         precision = 0
         recall = 0
-        if predi[index] == 'TP':
+        if predi[i] == 'TP':
             acu_tp = acu_tp + 1
         else:
             acu_fp = acu_fp + 1
@@ -244,9 +247,20 @@ def precisionRecall(predi):
         prec_list.append(precision)
         recall_list.append(recall)
         index = index + 1
+        print(recall)
     return prec_list, recall_list
 
 
+prediction_sorted = prediction[::-1]
+
+print(prediction)
+prec_list, recall_list = precisionRecall(prediction_sorted)
+print(recall_list)
+print(prec_list)
 
 
-prec_list, recall_list = precisionRecall(prediction)
+
+#recall_list.reverse()
+
+
+precision_recall.print_printRecPrec(recall_list, prec_list)
