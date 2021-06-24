@@ -32,8 +32,8 @@ for e, i in enumerate(os.listdir(annot)):
     if e < 10:
         filename = i.split(".")[0] + ".png"
         print(filename)
-        img = cv2.imread(os.path.join(path, '118.png'))
-        df = pd.read_csv(os.path.join(annot, '118.csv'))
+        img = cv2.imread(os.path.join(path, '184.png'))
+        df = pd.read_csv(os.path.join(annot, '184.csv'))
         #plt.imshow(img)
         #plt.show()
         for row in df.iterrows():
@@ -50,7 +50,7 @@ for e, i in enumerate(os.listdir(annot)):
 cv2.setUseOptimized(True);
 ss = cv2.ximgproc.segmentation.createSelectiveSearchSegmentation()
 
-im = cv2.imread(os.path.join(path, "118.png"))
+im = cv2.imread(os.path.join(path, "117.png"))
 ss.setBaseImage(im)
 ss.switchToSelectiveSearchQuality()
 rects = ss.process()

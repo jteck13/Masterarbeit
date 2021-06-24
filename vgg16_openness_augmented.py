@@ -18,8 +18,12 @@ if gpus:
         print(e)
 from tensorflow.keras.optimizers import Adam
 
-path = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Experiment_22042021' + '\\'
-annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\experiment' + '\\'
+#path = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Images\28042021' + '\\'
+#annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\old_lrm' + '\\'
+
+path = 'openness_augmentation/resize'
+annot = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\newTraining2206\openness\annot'
+
 
 cpt = sum([len(files) for r, d, files in os.walk(path)])
 print(cpt)
@@ -28,8 +32,8 @@ for e, i in enumerate(os.listdir(annot)):
     if e < 10:
         filename = i.split(".")[0] + ".png"
         print(filename)
-        img = cv2.imread(os.path.join(path, '118.png'))
-        df = pd.read_csv(os.path.join(annot, '118.csv'))
+        img = cv2.imread(os.path.join(path, '184.png'))
+        df = pd.read_csv(os.path.join(annot, '184.csv'))
         #plt.imshow(img)
         #plt.show()
         for row in df.iterrows():
@@ -46,7 +50,7 @@ for e, i in enumerate(os.listdir(annot)):
 cv2.setUseOptimized(True);
 ss = cv2.ximgproc.segmentation.createSelectiveSearchSegmentation()
 
-im = cv2.imread(os.path.join(path, "118.png"))
+im = cv2.imread(os.path.join(path, "117.png"))
 ss.setBaseImage(im)
 ss.switchToSelectiveSearchQuality()
 rects = ss.process()
@@ -114,13 +118,14 @@ for e, i in enumerate(os.listdir(annot)):
         fflag = 0
         bflag = 0
 
+
         for e, result in enumerate(ssresults):
-            if e < 4000 and flag == 0:
+            if e < 8000 and flag == 0:
                 for gtval in gtvalues:
                     x, y, w, h = result
                     iou = get_iou(gtval, {"x1": x, "x2": x + w, "y1": y, "y2": y + h})
                     if counter < 30:
-                        if iou > 0.5:
+                        if iou > 0.7:
                             timage = imout[y:y + h, x:x + w]
                             resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
                             flip1 = augmentation.flip_image(resized, 0)  # horizontal
@@ -170,13 +175,12 @@ for e, i in enumerate(os.listdir(annot)):
                     else:
                         fflag = 1
                     if falsecounter < 30:
-                        if iou < 0.3:
-                            if (cntPosCum >= cntNegCum):
-                                timage = imout[y:y + h, x:x + w]
-                                resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
-                                train_images.append(resized)
-                                train_labels.append(0)
-                                falsecounter += 1
+                        if iou < 0.2:
+                            timage = imout[y:y + h, x:x + w]
+                            resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
+                            train_images.append(resized)
+                            train_labels.append(0)
+                            falsecounter += 1
                             # print("outside")
                     else:
                         bflag = 1
@@ -205,7 +209,7 @@ from tensorflow.keras.layers import Dense
 from tensorflow.keras import Model
 from tensorflow.keras.models import load_model
 from tensorflow.keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras.applications.resnet50 import ResNet50
+from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.callbacks import TensorBoard
 import time
 import pickle
@@ -215,20 +219,20 @@ print('#################################### Training ##############')
 print('#################################### Training ##############')
 print('#################################### Training ##############')
 
-BATCH_SIZE = 8
-NAME = "resnet_openness_{}".format(int(time.time()))
+BATCH_SIZE = 6
+NAME = "vgg16_openness_{}".format(int(time.time()))
 tensorboard = TensorBoard(log_dir='logs/{}'.format(NAME))
-resnetModel = ResNet50(weights='imagenet', include_top=True)
-resnetModel.summary()
+VGGModel = VGG16(weights='imagenet', include_top=True)
+VGGModel.summary()
 
-for layers in (resnetModel.layers)[:15]:
+for layers in (VGGModel.layers)[:15]:
     print(layers)
     layers.trainable = False
 
-X = resnetModel.layers[-2].output
+X = VGGModel.layers[-2].output
 predictions = Dense(2, activation="softmax")(X)
-model_final = Model(resnetModel.input, predictions)
-opt = Adam(lr=0.00001)
+model_final = Model(VGGModel.input, predictions)
+opt = Adam(lr=0.000001)
 model_final.compile(loss=tf.keras.losses.categorical_crossentropy, optimizer=opt, metrics=["accuracy"])
 model_final.summary()
 
@@ -276,7 +280,7 @@ testdata = tsdata.flow(x=X_test, y=y_test, batch_size=BATCH_SIZE)
 
 from tensorflow.keras.callbacks import ModelCheckpoint, EarlyStopping
 
-checkpoint = ModelCheckpoint("ieeercnn_resnet_lrm_exp_final.h5", monitor='val_loss', verbose=1, save_best_only=True,
+checkpoint = ModelCheckpoint("ieeercnn_vgg16_openness__augmented_final1.h5", monitor='val_loss', verbose=1, save_best_only=True,
                              save_weights_only=False, mode='auto', period=1)
 early = EarlyStopping(monitor='val_loss', min_delta=0, patience=100, verbose=1, mode='auto')
 history = model_final.fit_generator(generator=traindata, steps_per_epoch=steps_per_epoch, epochs=1000,
@@ -308,7 +312,7 @@ plt.show()
 
 
 ############################ Load Model ##########################################################
-model_saved_lrm = load_model('ieeercnn_resnet_lrm_exp_final.h5')
+model_saved_vgg = load_model('ieeercnn_vgg16_openness__augmented_final1.h5')
 
 
 ########################### evaluate #############################################################
@@ -362,49 +366,3 @@ print('ROC AUC: %f' % auc)
 matrix = confusion_matrix(y_test, yhat_classes)
 print(matrix)
 
-
-
-############################ Predict model #######################################################
-
-pathOst = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Training_Ost_PNG' + '\\'
-pathPred = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\newTraining2206\openness\img' + '\\'
-z = 0
-
-for e, i in enumerate(os.listdir(pathPred)):
-    filenameRes = i.split(".")[0]
-    z += 1
-    img = cv2.imread(os.path.join(pathPred, i))
-    ss.setBaseImage(img)
-    ss.switchToSelectiveSearchQuality()
-    ssresults = ss.process()
-    imout = img.copy()
-    for e, result in enumerate(ssresults):
-        if e < 4000:
-            x, y, w, h = result
-            timage = imout[y:y + h, x:x + w]
-            resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
-            img = np.expand_dims(resized, axis=0)
-            out = model_final.predict(img)
-            #out= model_saved.predict(img)
-            #print(out[0][0])
-            if out[0][0] > 0.9:
-                #print(out[0][0])
-                cv2.rectangle(imout, (x, y), (x+w, y+h), (0, 255, 0), 1, cv2.LINE_AA)
-                cv2.putText(imout, str("%.2f" % round(out[0][0],2)), (x, y - 10), cv2.FONT_HERSHEY_SIMPLEX, .5, (36, 255, 12), 2)
-    plt.figure()
-    plt.imshow(imout)
-    plt.show()
-    cv2.imwrite('result/lrm/25052021_/result{}.png'.format(filenameRes), imout)
-    # cv2.rectangle(copy,(s,u),(t,v),(0,0,255),2)
-
-
-
-
-z = 0
-
-for e, i in enumerate(os.listdir(pathPred)):
-    filenameRes = i.split(".")[0]
-    z += 1
-    imgageneu = cv2.imread(os.path.join(pathPred, i))
-    resized = augmentation.resize_image(imgageneu, 500, 500)
-    cv2.imwrite('openness_augmentation/resize/{}.png'.format(filenameRes), resized)

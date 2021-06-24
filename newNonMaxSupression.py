@@ -30,7 +30,7 @@ cv2.setUseOptimized(True);
 ss = cv2.ximgproc.segmentation.createSelectiveSearchSegmentation()
 
 ############################ Load Model ##########################################################
-model_saved = load_model('ieeercnn_resnet_lrm_augment_final1.h5')
+
 
 ############################ Predict model #######################################################
 
@@ -117,23 +117,27 @@ def non_max_suppression_slow(boxes, overlapThresh):
 #pathOpen = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Images\28042021' + '\\'
 #annotOpen = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\old_lrm' + '\\'
 
-pathOpen = 'test/lrm'
-annotOpen = 'test/annot'
+pathOpen = 'test/openness/imgs'
+annotOpen = 'test/openness/annot'
+model_saved = load_model('ieeercnn_resnet_openness_final_res1.h5')
+
+acc134 = []
+iou_acc134 = []
+acc73 = []
+iou_acc73 = []
 
 
 z = 0
 cnt = 0
 ct = 0
-
 resultDict = []
 
-
 for e, i in enumerate(os.listdir(pathOpen)):
-    if i.startswith("73.png"):
+    if i.startswith("134.png"):
         filenameRes = i.split(".")[0]
         z += 1
         #read test bbox
-        df = pd.read_csv(os.path.join(annotOpen, '73.csv'))
+        df = pd.read_csv(os.path.join(annotOpen, '134.csv'))
         gtvalues = []
         predvalues = []
         for row in df.iterrows():
@@ -148,13 +152,13 @@ for e, i in enumerate(os.listdir(pathOpen)):
         ssresults = ss.process()
         imout = img.copy()
         for e, result in enumerate(ssresults):
-            if e < 6000:
+            if e < 2000:
                 x, y, w, h = result
                 timage = imout[y:y + h, x:x + w]
                 resized = cv2.resize(timage, (224, 224), interpolation=cv2.INTER_AREA)
                 img = np.expand_dims(resized, axis=0)
                 out = model_saved.predict(img)
-                if out[0][0] > 0.0:
+                if out[0][0] > 0.01:
                     for gtval in gtvalues:
                         #calculate iou for predicted img
                         iou = get_iou(gtval, {"x1": x, "x2": x + w, "y1": y, "y2": y + h})
@@ -179,10 +183,17 @@ for e, i in enumerate(os.listdir(pathOpen)):
                 if(iou > 0.0):
                     cv2.putText(imout, str("%.2f" % round(iou, 2)), (int(startX) + 15, int(startY) - 20), cv2.FONT_HERSHEY_SIMPLEX,
                                 .5, (255, 36, 12), 2)
-                print("iou")
-                print(round(iou, 2))
-                print("acc")
-                print(round(pred, 2))
+
+                #iou_acc73.append(round(iou, 2))
+                #acc73.append(round(pred, 2))
+
+                iou_acc134.append(round(iou, 2))
+                acc134.append(round(pred, 2))
+
+                #print("iou")
+                #print(round(iou, 2))
+                #print("acc")
+                #print(round(pred, 2))
         plt.figure()
         plt.imshow(imout)
         plt.show()
@@ -192,4 +203,50 @@ for e, i in enumerate(os.listdir(pathOpen)):
 del boundingBoxes
 
 
+#acc134 = [.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.01, 0.02, 0.02, 0.02, 0.02, 0.02, 0.02, 0.03, 0.03, 0.03, 0.03, 0.03, 0.04, 0.05, 0.05, 0.06, 0.06, 0.1, 0.12, 0.14, 0.16, 0.17, 0.22, 0.22, 0.28, 0.37, 0.43, 0.45, 0.6, 0.72, 0.75, 0.84, 0.91, 0.91, 0.92, 0.93, 0.94, 0.98, 0.98, 0.98, 0.99, 0.99, 0.99, 1.0, 1.0, 1.0, 1.0, 1.0]
+#iou_acc134 = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.05, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.8, 0.93]
 
+acc_all = acc134 + acc73
+iou_all = iou_acc134 + iou_acc73
+
+acc, iou_acc = zip(*sorted(zip(acc_all, iou_all)))
+
+print(acc)
+print(iou_acc)
+
+prediction = []
+
+for i,a in enumerate(acc):
+    if(acc[i] > .5 and iou_acc[i] > 0.5):
+        prediction.append("TP")
+    else:
+        prediction.append("FP")
+
+
+print(prediction)
+
+def precisionRecall(predi):
+    index = 0
+    acu_tp = 0
+    acu_fp = 0
+    prec_list= []
+    recall_list = []
+    for item in predi[::-1]:
+        precision = 0
+        recall = 0
+        if predi[index] == 'TP':
+            acu_tp = acu_tp + 1
+        else:
+            acu_fp = acu_fp + 1
+        #print(acu_tp)
+        precision = acu_tp/(acu_tp+acu_fp)
+        recall = acu_tp/7
+        prec_list.append(precision)
+        recall_list.append(recall)
+        index = index + 1
+    return prec_list, recall_list
+
+
+
+
+prec_list, recall_list = precisionRecall(prediction)
