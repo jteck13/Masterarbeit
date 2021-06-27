@@ -118,9 +118,12 @@ def non_max_suppression_slow(boxes, overlapThresh):
 #pathOpen = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Images\28042021' + '\\'
 #annotOpen = r'C:\Users\jteck\Documents\Uni\Masterarbeit\Training\Annotations\old_lrm' + '\\'
 
-pathOpen = 'test/openness/imgs'
-annotOpen = 'test/openness/annot'
-model_saved = load_model('ieeercnn_resnet_openness_final_res1.h5')
+pathOpen = 'test/lrm'
+annotOpen = 'test/annot'
+model_saved = load_model('ieeercnn_vgg16_lrm_augmented_final2.h5')
+
+#labelAuc = 'Openness ResNet'
+label = 'LRM VGG16 Artificial Augmented PRC @ '
 
 acc134 = []
 iou_acc134 = []
@@ -196,6 +199,7 @@ for e, i in enumerate(os.listdir(pathOpen)):
                 #print("acc")
                 #print(round(pred, 2))
         plt.figure()
+        #plt.savefig('endPic/vgg_openness/73')
         plt.imshow(imout)
         plt.show()
         # cv2.imwrite('result/openness/result{}.png'.format(filenameRes), imout)
@@ -206,15 +210,16 @@ del boundingBoxes
 acc_all = acc134 + acc73
 iou_all = iou_acc134 + iou_acc73
 
+
 acc, iou_acc = zip(*sorted(zip(acc_all, iou_all)))
 
 def createPred(acc, iou_acc, thresh):
     prediction = []
     for i,a in enumerate(acc):
-        if(acc[i] > thresh and iou_acc[i] > 0.5):
-            prediction.append("TP")
+        if(acc[i] > 0.5 and iou_acc[i] > thresh):
+            prediction.append(1)
         else:
-            prediction.append("FP")
+            prediction.append(0)
     return  prediction[::-1]
 
 
@@ -229,7 +234,7 @@ def precisionRecall(predi):
     for i in range(len(predi)):
         precision = 0
         recall = 0
-        if predi[i] == 'TP':
+        if predi[i] == 1:
             acu_tp = acu_tp + 1
         else:
             acu_fp = acu_fp + 1
@@ -242,8 +247,21 @@ def precisionRecall(predi):
     return prec_list, recall_list
 
 
+
 prediction_sorted = createPred(acc, iou_acc, 0.5)
 
 prec_list, recall_list = precisionRecall(prediction_sorted)
 
-precision_recall.print_printRecPrec(recall_list, prec_list)
+precision_recall.print_printRecPrec(recall_list, prec_list, label, 0.5)
+
+#AP = (4*1.0+2*0.29+0.26)/11
+
+recall = np.array(recall_list)
+precision = np.array(prec_list)
+i = np.array(range(1, len(recall)))
+re = recall[i] - recall[i - 1]
+pr = precision[i] + precision[i - 1]
+
+# Multiply re and pr lists and then take sum and divide by 2
+ap = np.sum(re * pr) / 2
+print(round(ap, 2))
